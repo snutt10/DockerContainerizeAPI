@@ -7,4 +7,6 @@ This file lists files that the assistant (AI) created or modified during the ses
 - Modified: `DockerContainerizeAPI/docker-compose.yml` — added `nginx` service
 - Modified (local, outside workspace): `c:\Users\snutt\nginx-1.28.1\conf\nginx.conf` — updated upstream servers to use Docker service names
 
+- Created: 'server.js' - http request files and documentation
+
 If you want these changes reverted or committed, tell me and I can create a git commit for you.
