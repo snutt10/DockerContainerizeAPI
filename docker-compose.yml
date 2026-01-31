@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: game-api-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: CSC380
+    volumes:
+      - mongodb_data:/data/db
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  game-api1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=production
+      - APP_NAME=GameAPI1
+      - PORT=3000
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
+    container_name: game-api1
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+  game-api2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=production
+      - APP_NAME=GameAPI2
+      - PORT=3000
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
+    container_name: game-api2
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    ports:
+      - "8080:8080"
+    depends_on:
+      - game-api1
+      - game-api2
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
