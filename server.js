@@ -65,21 +65,13 @@ const userSchema = new mongoose.Schema({
         unique: true,
         lowercase: true
     },
-    location: {
+    address: {
         type: String,
         default: null
     },
-    joinedDate: {
-        type: Date,
-        default: Date.now
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
+    password: {
+        type: String,
+        required: true
     }
 });
 
@@ -227,28 +219,15 @@ const swaggerOptions = {
                             type: 'string',
                             description: 'The user email'
                         },
-                        location: {
+                        address: {
                             type: 'string',
                             nullable: true,
-                            description: 'User location'
+                            description: 'User address'
                         },
-                        joinedDate: {
+                        password: {
                             type: 'string',
-                            format: 'date-time',
-                            description: 'When the user joined'
+                            description: 'The user password'
                         },
-                        gameCount: {
-                            type: 'integer',
-                            description: 'Number of games owned by user'
-                        },
-                        createdAt: {
-                            type: 'string',
-                            format: 'date-time'
-                        },
-                        updatedAt: {
-                            type: 'string',
-                            format: 'date-time'
-                        }
                     }
                 },
                 Exchange: {
@@ -394,7 +373,7 @@ app.post('/games', async (req, res) => {
         });
 
         const savedGame = await newGame.save();
-        res.status(201).location(`/games/${savedGame._id}`).json(savedGame);
+        res.status(201).address(`/games/${savedGame._id}`).json(savedGame);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -616,10 +595,10 @@ app.get('/users', async (req, res) => {
  */
 app.post('/users', async (req, res) => {
     try {
-        const { username, email, location } = req.body;
+        const { username, email, password, address } = req.body;
 
-        if (!username || !email) {
-            return res.status(400).json({ error: 'Username and email are required' });
+        if (!username || !email || !password) {
+            return res.status(400).json({ error: 'Username, email, and password are required' });
         }
 
         // Check if email already exists
@@ -631,13 +610,13 @@ app.post('/users', async (req, res) => {
         const newUser = new User({
             username,
             email: email.toLowerCase(),
-            location: location || null,
-            joinedDate: new Date()
+            address: address || null,
+            password: await bcrypt.hash(password, 10),
         });
 
         const savedUser = await newUser.save();
         const userWithCount = { ...savedUser.toObject(), gameCount: 0 };
-        res.status(201).location(`/users/${savedUser._id}`).json(userWithCount);
+        res.status(201).address(`/users/${savedUser._id}`).json(userWithCount);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -700,7 +679,7 @@ app.get('/users/:id', async (req, res) => {
  */
 app.put('/users/:id', async (req, res) => {
     try {
-        const { username, email, location } = req.body;
+        const { username, email, address, password } = req.body;
 
         if (email) {
             const existingUser = await User.findOne({ email: email.toLowerCase(), _id: { $ne: req.params.id } });
@@ -711,8 +690,8 @@ app.put('/users/:id', async (req, res) => {
 
         const updateData = {};
         if (username !== undefined) updateData.username = username;
-        if (email !== undefined) updateData.email = email.toLowerCase();
-        if (location !== undefined) updateData.location = location;
+        if (address !== undefined) updateData.address = address;
+        if (password !== undefined) updateData.password = await bcrypt.hash(password, 10);
         updateData.updatedAt = Date.now();
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -749,7 +728,7 @@ app.put('/users/:id', async (req, res) => {
  */
 app.patch('/users/:id', async (req, res) => {
     try {
-        const { username, email, location } = req.body;
+        const { username, email, address, password } = req.body;
 
         if (email) {
             const existingUser = await User.findOne({ email: email.toLowerCase(), _id: { $ne: req.params.id } });
@@ -761,7 +740,8 @@ app.patch('/users/:id', async (req, res) => {
         const updateData = {};
         if (username !== undefined && username !== '') updateData.username = username;
         if (email !== undefined && email !== '') updateData.email = email.toLowerCase();
-        if (location !== undefined && location !== '') updateData.location = location;
+        if (address !== undefined && address !== '') updateData.address = address;
+        if (password !== undefined) updateData.password = await bcrypt.hash(password, 10);
         updateData.updatedAt = Date.now();
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
@@ -947,7 +927,7 @@ app.post('/exchanges', async (req, res) => {
             { path: 'gameRequestedId', select: 'name gamingSystem' }
         ]);
 
-        res.status(201).location(`/exchanges/${savedExchange._id}`).json(populatedExchange);
+        res.status(201).address(`/exchanges/${savedExchange._id}`).json(populatedExchange);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
