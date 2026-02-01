@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin123@localhost:27017/CSC380?authSource=admin';
