@@ -690,6 +690,7 @@ app.put('/users/:id', async (req, res) => {
 
         const updateData = {};
         if (username !== undefined) updateData.username = username;
+        if (email !== undefined) updateData.email = email.toLowerCase();
         if (address !== undefined) updateData.address = address;
         if (password !== undefined) updateData.password = await bcrypt.hash(password, 10);
         updateData.updatedAt = Date.now();
