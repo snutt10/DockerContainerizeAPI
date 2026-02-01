@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -373,7 +374,7 @@ app.post('/games', async (req, res) => {
         });
 
         const savedGame = await newGame.save();
-        res.status(201).address(`/games/${savedGame._id}`).json(savedGame);
+        res.status(201).location(`/games/${savedGame._id}`).json(savedGame);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -616,7 +617,7 @@ app.post('/users', async (req, res) => {
 
         const savedUser = await newUser.save();
         const userWithCount = { ...savedUser.toObject(), gameCount: 0 };
-        res.status(201).address(`/users/${savedUser._id}`).json(userWithCount);
+        res.status(201).location(`/users/${savedUser._id}`).json(userWithCount);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
@@ -927,7 +928,7 @@ app.post('/exchanges', async (req, res) => {
             { path: 'gameRequestedId', select: 'name gamingSystem' }
         ]);
 
-        res.status(201).address(`/exchanges/${savedExchange._id}`).json(populatedExchange);
+        res.status(201).location(`/exchanges/${savedExchange._id}`).json(populatedExchange);
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
