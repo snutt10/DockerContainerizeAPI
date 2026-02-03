@@ -729,20 +729,27 @@ app.put('/users/:id', async (req, res) => {
  */
 app.patch('/users/:id', async (req, res) => {
     try {
-        const { username, email, address, password } = req.body;
-
-        if (email) {
-            const existingUser = await User.findOne({ email: email.toLowerCase(), _id: { $ne: req.params.id } });
-            if (existingUser) {
-                return res.status(400).json({ error: 'Email already in use' });
-            }
+        // Do not allow changing email via PATCH
+        if (Object.prototype.hasOwnProperty.call(req.body, 'email')) {
+            return res.status(400).json({ error: 'Email cannot be changed' });
         }
 
         const updateData = {};
-        if (username !== undefined && username !== '') updateData.username = username;
-        if (email !== undefined && email !== '') updateData.email = email.toLowerCase();
-        if (address !== undefined && address !== '') updateData.address = address;
-        if (password !== undefined) updateData.password = await bcrypt.hash(password, 10);
+        // Apply only fields explicitly provided in the request body
+        if (Object.prototype.hasOwnProperty.call(req.body, 'username')) {
+            updateData.username = req.body.username === '' ? null : req.body.username;
+        }
+        if (Object.prototype.hasOwnProperty.call(req.body, 'address')) {
+            updateData.address = req.body.address === '' ? null : req.body.address;
+        }
+        if (Object.prototype.hasOwnProperty.call(req.body, 'password')) {
+            updateData.password = await bcrypt.hash(req.body.password, 10);
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: 'No valid fields provided for update' });
+        }
+
         updateData.updatedAt = Date.now();
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
