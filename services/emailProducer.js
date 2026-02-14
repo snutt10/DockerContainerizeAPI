@@ -1,6 +1,6 @@
-const { consumer } = require('./kafka');
-const User = require('./models/User');
-const sendEmail = require('./email');
+const { consumer } = require('../config/kafka');
+const User = require('../models/User');
+const sendEmail = require('email');
 
 const run = async () => {
     await consumer.connect();

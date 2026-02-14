@@ -1,6 +1,9 @@
 const express = require('express');
-const setupSwagger = require('./config/swagger');
-const { connectKafka } = require('.config/kafka');
+const swaggerUi = require('swagger-ui-express');
+const {setupSwagger} = require('./config/swagger');
+const {swaggerOptions} = require('./config/swagger');
+const swaggerJsdoc = require('swagger-jsdoc');
+const { connectKafka } = require('./config/kafka');
 const { connectDB } = require('./config/db');
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +20,6 @@ app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // ============================================
 // Front Endpoint
 // ============================================
-const replicaApp = process.env.APP_NAME
 /**
  * @swagger
  * /:
@@ -32,9 +34,9 @@ app.get('/', (req, res) => {
     console.log(`Request served by: ${replicaApp}`);
 });
 
-app.use('/games', require('./routes/games'));
-app.use('/users', require('./routes/users'));
-app.use('/exchanges', require('./routes/exchanges'));
+// app.use('/games', require('./routes/games'));
+// app.use('/users', require('./routes/users'));
+// app.use('/exchanges', require('./routes/exchanges'));
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE
@@ -50,6 +52,6 @@ app.use((err, req, res, next) => {
 // ============================================
 
 app.listen(PORT, () => {
-    console.log(`${replicaApp} is listening on port ${PORT}`);
+    console.log(`Game Exchange API is listening on port ${PORT}`);
     console.log(`Swagger UI available at http://localhost:${PORT}/swagger`);
 });

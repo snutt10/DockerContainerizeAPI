@@ -91,7 +91,7 @@ services:
   # Email service (Kafka consumer)
   email-service:
     build:
-      context: ./services/emailProducer
+      context: .
       dockerfile: Dockerfile.email
     ports:
       - "4000:4000"
@@ -101,10 +101,8 @@ services:
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
       - KAFKA_BROKER=kafka:9092
     depends_on:
-      - mongodb:
-          condition: service_healthy
-      - kafka:
-          condition: service_started
+      - mongodb
+      - kafka
     restart: unless-stopped
 
 volumes:

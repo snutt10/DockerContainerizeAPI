@@ -1,5 +1,6 @@
 const express = require('express');
 const Game = require('../models/Game');
+const User = require('../models/User');
 const app = express();
 app.use(express.json());
 

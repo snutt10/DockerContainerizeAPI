@@ -170,4 +170,4 @@ const setupSwagger = (app) => {
     app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 };
 
-module.exports = setupSwagger;
+module.exports = {setupSwagger, swaggerOptions};

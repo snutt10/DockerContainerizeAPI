@@ -18,8 +18,7 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 
 # Copy application code
-COPY server.js .
-COPY package*.json ./
+COPY . .
 
 # Expose port
 EXPOSE 3000

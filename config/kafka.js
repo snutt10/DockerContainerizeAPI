@@ -1,14 +1,16 @@
-const { Kafka } = require('kafkajs')
-
+const { Kafka, Partitioners } = require('kafkajs')
+const brokers = process.env.KAFKA_BROKERS || 'localhost:9092';
 const kafka = new Kafka({
     clientId: 'video-game-exchange-api',
-    brokers: ['kafka:9092'],
+    brokers: [brokers],
 });
 
 const admin = kafka.admin();
-const producer = kafka.producer();
+const producer = kafka.producer({
+    createPartitioner: Partitioners.DefaultPartitioner,
+});
 
-const connectKafka = async () => {
+const consumer = async () => {
     await producer.connect();
     await admin.connect();
     await admin.createTopics({
@@ -37,5 +39,5 @@ const connectKafka = async () => {
 
 module.exports = {
     producer, 
-    connectKafka,
+    consumer,
 };

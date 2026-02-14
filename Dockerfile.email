@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 4000
 
 # Start the consumer
-CMD ["node", "index.js"]
+CMD ["node", "services/emailProducer.js"]
