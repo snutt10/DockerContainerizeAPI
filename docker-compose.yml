@@ -91,8 +91,10 @@ services:
   # Email service (Kafka consumer)
   email-service:
     build:
-      context: ./email-service
-      dockerfile: Dockerfile
+      context: ./services/emailProducer
+      dockerfile: Dockerfile.email
+    ports:
+      - "4000:4000"
     container_name: email-service
     environment:
       - NODE_ENV=production

@@ -1,6 +1,8 @@
 const express = require('express');
 const Exchange = require('../models/Exchange');
-const app = express();
+const { producer } = require('../config/kafka');
+const User = require('../models/User');
+const Game = require('../models/Game');const app = express();
 app.use(express.json());
 
 // ============================================
@@ -180,7 +182,6 @@ app.get('/exchanges/:id', async (req, res) => {
  *         description: Exchange not found
  *       400:
  *         description: Exchange cannot be accepted
- * for the exchange post that accepts the exchange, is the code correct for producing an event to a topic?
  */
 app.post('/exchanges/:id/accept', async (req, res) => {
     try {
@@ -214,9 +215,9 @@ app.post('/exchanges/:id/accept', async (req, res) => {
                 {
                 value: JSON.stringify({
                     eventType: 'OFFER_ACCEPTED',
-                    offerId: offer._id,
-                    initiatingUserId: offer.initiatingUserId,
-                    targetUserId: offer.targetUserId,
+                    offerId: populatedExchange._id,
+                    initiatingUserId: populatedExchange.initiatingUserId._id,
+                    targetUserId: populatedExchange.targetUserId._id,
                     timestamp: new Date().toISOString()
                 })
                 }
