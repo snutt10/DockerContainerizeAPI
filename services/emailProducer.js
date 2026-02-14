@@ -1,0 +1,35 @@
+const { consumer } = require('./kafka');
+const User = require('./models/User');
+const sendEmail = require('./email');
+
+const run = async () => {
+    await consumer.connect();
+    await consumer.subscribe({ topic: 'user-events', fromBeginning: false });
+    await consumer.subscribe({ topic: 'offer-events', fromBeginning: false });
+
+    await consumer.run({
+        eachMessage: async ({ topic, message }) => {
+        const event = JSON.parse(message.value.toString());
+
+        switch (topic) {
+            case 'user-events':
+            if (event.eventType === 'PASSWORD_CHANGED') {
+                const user = await User.findById(event.userId);
+                await sendEmail(user.email, 'Your password was changed');
+            }
+            break;
+
+            case 'offer-events':
+            const initiatingUser = await User.findById(event.initiatingUserId);
+            const targetUser = await User.findById(event.targetUserId);
+            if (event.eventType === 'OFFER_CREATED') {
+                await sendEmail(initiatingUser.email, 'Offer created');
+                await sendEmail(targetUser.email, 'You received a new offer');
+            }
+            break;
+        }
+        }
+    });
+};
+
+run().catch(console.error);

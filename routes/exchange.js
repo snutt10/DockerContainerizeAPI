@@ -103,6 +103,20 @@ app.post('/exchanges', async (req, res) => {
             { path: 'gameRequestedId', select: 'name gamingSystem' }
         ]);
 
+        await producer.send({
+            topic: 'offer-events',
+            messages: [
+                {
+                value: JSON.stringify({
+                    eventType: 'OFFER_CREATED',
+                    offerId: savedExchange._id,
+                    initiatingUserId: savedExchange.initiatingUserId,
+                    targetUserId: savedExchange.targetUserId,
+                    timestamp: new Date().toISOString()
+                })
+                }
+            ]
+        });
         res.status(201).location(`/exchanges/${savedExchange._id}`).json(populatedExchange);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -166,6 +180,7 @@ app.get('/exchanges/:id', async (req, res) => {
  *         description: Exchange not found
  *       400:
  *         description: Exchange cannot be accepted
+ * for the exchange post that accepts the exchange, is the code correct for producing an event to a topic?
  */
 app.post('/exchanges/:id/accept', async (req, res) => {
     try {
@@ -192,6 +207,21 @@ app.post('/exchanges/:id/accept', async (req, res) => {
             { path: 'gameOfferedId', select: 'name gamingSystem' },
             { path: 'gameRequestedId', select: 'name gamingSystem' }
         ]);
+
+        await producer.send({
+            topic: 'offer-events',
+            messages: [
+                {
+                value: JSON.stringify({
+                    eventType: 'OFFER_ACCEPTED',
+                    offerId: offer._id,
+                    initiatingUserId: offer.initiatingUserId,
+                    targetUserId: offer.targetUserId,
+                    timestamp: new Date().toISOString()
+                })
+                }
+            ]
+        });
 
         res.json(populatedExchange);
     } catch (error) {

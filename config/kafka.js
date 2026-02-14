@@ -14,17 +14,17 @@ const connectKafka = async () => {
     await admin.createTopics({
         topics: [
             {
-                topic: 'user',
+                topic: 'user-events',
                 numPartitions: 1,
                 replicationFactor: 1,
             },
             {
-                topic: 'game',
+                topic: 'game-events',
                 numPartitions: 1,
                 replicationFactor: 1,
             },
             {
-                topic: 'offer',
+                topic: 'offer-events',
                 numPartitions: 1,
                 replicationFactor: 1
             },

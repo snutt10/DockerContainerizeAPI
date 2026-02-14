@@ -1,13 +1,20 @@
 version: '3.8'
 
 services:
+  # Kafka broker
   kafka:
     image: apache/kafka:3.7.0
     container_name: kafka
     ports:
       - "9092:9092"
     environment:
-      - name=value
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    restart: unless-stopped
+
+  # MongoDB
   mongodb:
     image: mongo:7.0
     container_name: game-api-mongo
@@ -27,6 +34,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Game API instance 1
   game-api1:
     build:
       context: .
@@ -38,11 +46,16 @@ services:
       - APP_NAME=GameAPI1
       - PORT=3000
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
+      - KAFKA_BROKER=kafka:9092
     container_name: game-api1
     depends_on:
       mongodb:
         condition: service_healthy
+      kafka:
+        condition: service_started
     restart: unless-stopped
+
+  # Game API instance 2
   game-api2:
     build:
       context: .
@@ -54,12 +67,16 @@ services:
       - APP_NAME=GameAPI2
       - PORT=3000
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
+      - KAFKA_BROKER=kafka:9092
     container_name: game-api2
     depends_on:
       mongodb:
         condition: service_healthy
+      kafka:
+        condition: service_started
     restart: unless-stopped
 
+  # Nginx load balancer
   nginx:
     build:
       context: .
@@ -69,6 +86,23 @@ services:
     depends_on:
       - game-api1
       - game-api2
+    restart: unless-stopped
+
+  # Email service (Kafka consumer)
+  email-service:
+    build:
+      context: ./email-service
+      dockerfile: Dockerfile
+    container_name: email-service
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      - mongodb:
+          condition: service_healthy
+      - kafka:
+          condition: service_started
     restart: unless-stopped
 
 volumes:

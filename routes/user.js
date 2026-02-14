@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const User = require('../models/User');
 const app = express();
 app.use(express.json());
@@ -158,6 +159,22 @@ app.put('/users/:id', async (req, res) => {
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
         if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+
+        if (password !== undefined){
+            await producer.send({
+                topic: 'user-events',
+                messages: [
+                    {
+                    value: JSON.stringify({
+                        eventType: 'PASSWORD_CHANGED',
+                        userId: updatedUser._id,
+                        timestamp: new Date().toISOString()
+                    })
+                    }
+                ]
+            });
+        }
+
         const gameCount = await Game.countDocuments({ ownerId: updatedUser._id });
         res.json({ ...updatedUser.toObject(), gameCount });
     } catch (error) {
