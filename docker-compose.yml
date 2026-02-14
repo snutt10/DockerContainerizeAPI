@@ -1,6 +1,13 @@
 version: '3.8'
 
 services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      - name=value
   mongodb:
     image: mongo:7.0
     container_name: game-api-mongo

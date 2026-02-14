@@ -3,17 +3,21 @@ const mongoose = require('mongoose');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const bcrypt = require('bcryptjs');
+const Game = require('../models/Game');
+const User = require('../models/User');
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://admin:admin123@localhost:27017/CSC380?authSource=admin';
 
 // Middleware
 app.use(express.json());
 
 // ============================================
-// MONGOOSE ScHEMAS AND MODELS
+// DB Schema
 // ============================================
-
+//const Game = mongoose.model('Game', gameSchema, 'games');
+const User = mongoose.model('User', userSchema, 'users');
+const Exchange = mongoose.model('Exchange', exchangeSchema, 'exchanges');
+/*
 const gameSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -115,10 +119,6 @@ const exchangeSchema = new mongoose.Schema({
     }
 });
 
-const Game = mongoose.model('Game', gameSchema, 'games');
-const User = mongoose.model('User', userSchema, 'users');
-const Exchange = mongoose.model('Exchange', exchangeSchema, 'exchanges');
-
 // ============================================
 // DATABASE CONNECTION
 // ============================================
@@ -134,6 +134,10 @@ mongoose.connect(MONGODB_URI, {
     console.error('MongoDB connection error:', err);
     process.exit(1);
 });
+*/
+
+const connectDB = require('./config/db');
+connectDB();
 
 // ============================================
 // SWAGGER CONFIGURATION
