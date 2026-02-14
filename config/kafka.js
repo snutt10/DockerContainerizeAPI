@@ -5,14 +5,37 @@ const kafka = new Kafka({
     brokers: ['kafka:9092'],
 });
 
+const admin = kafka.admin();
 const producer = kafka.producer();
 
-const connectProducer = async () => {
+const connectKafka = async () => {
     await producer.connect();
+    await admin.connect();
+    await admin.createTopics({
+        topics: [
+            {
+                topic: 'user',
+                numPartitions: 1,
+                replicationFactor: 1,
+            },
+            {
+                topic: 'game',
+                numPartitions: 1,
+                replicationFactor: 1,
+            },
+            {
+                topic: 'offer',
+                numPartitions: 1,
+                replicationFactor: 1
+            },
+        ]
+    });
+    await admin.disconnect();
+
     console.log("Kafka connected");
 };
 
 module.exports = {
     producer, 
-    connectProducer,
-}
+    connectKafka,
+};
