@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { producer } = require('../config/kafka');
+const { producer } = require('../config/producer');
 const User = require('../models/User');
 const Game = require('../models/Game');
 const app = express();

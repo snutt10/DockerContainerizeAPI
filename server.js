@@ -3,14 +3,14 @@ const swaggerUi = require('swagger-ui-express');
 const {setupSwagger} = require('./config/swagger');
 const {swaggerOptions} = require('./config/swagger');
 const swaggerJsdoc = require('swagger-jsdoc');
-const { connectKafka } = require('./config/kafka');
+//const { consumer } = require('./config/kafka');
 const { connectDB } = require('./config/db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-connectKafka();
+//consumer();
 connectDB();
 
 setupSwagger(app);

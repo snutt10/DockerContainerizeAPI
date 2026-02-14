@@ -273,6 +273,21 @@ app.post('/exchanges/:id/reject', async (req, res) => {
             { path: 'gameRequestedId', select: 'name gamingSystem' }
         ]);
 
+        await producer.send({
+            topic: 'offer-events',
+            messages: [
+                {
+                value: JSON.stringify({
+                    eventType: 'OFFER_REJECTED',
+                    offerId: populatedExchange._id,
+                    initiatingUserId: populatedExchange.initiatingUserId._id,
+                    targetUserId: populatedExchange.targetUserId._id,
+                    timestamp: new Date().toISOString()
+                })
+                }
+            ]
+        });
+
         res.json(populatedExchange);
     } catch (error) {
         res.status(500).json({ error: error.message });
