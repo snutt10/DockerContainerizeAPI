@@ -54,8 +54,3 @@ app.use((err, req, res, next) => {
 // START SERVER
 // ============================================
 startServer();
-
-app.listen(PORT, () => {
-    console.log(`Game Exchange API is listening on port ${PORT}`);
-    console.log(`Swagger UI available at http://localhost:${PORT}/swagger`);
-});

@@ -1,7 +1,5 @@
-version: '3.8'
 
 services:
-  # Kafka broker
   # Kafka broker
   kafka:
     image: apache/kafka:3.7.0
@@ -24,10 +22,11 @@ services:
       CLUSTER_ID: 5L6g3nShT-eMCtK--X86sw
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
+      start_period: 40s
 
   # MongoDB
   mongodb:
@@ -116,8 +115,12 @@ services:
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
       - KAFKA_BROKER=kafka:9092
     depends_on:
-      - mongodb
-      - kafka
+      mongodb:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      game-api1:
+        condition: service_started
     restart: unless-stopped
 
 volumes:

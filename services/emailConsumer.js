@@ -1,8 +1,7 @@
 const { consumer } = require('./consumer');
-const { createTransporter } = require('../config/email');
+const createTransporter = require('../config/email');
+const { connectDB } = require('../config/db');
 const User = require('../models/User');
-const sendEmail = require('email');
-const { text } = require('express');
 
 let transporter;
 
@@ -34,18 +33,46 @@ async function sendEmail(email, subject, body) {
     }
 }
 
+async function connectWithRetry(maxRetries = 10, delayMs = 5000) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`Attempting to connect to Kafka (attempt ${attempt}/${maxRetries})...`);
+            
+            await consumer.connect();
+            console.log('Email consumer connected to Kafka');
+
+            await consumer.subscribe({ topic: 'user-events', fromBeginning: false });
+            await consumer.subscribe({ topic: 'offer-events', fromBeginning: false });
+            
+            console.log('Successfully subscribed to topics: user-events, offer-events');
+            return true;
+        } catch (error) {
+            console.error(`Connection attempt ${attempt} failed:`, error.message);
+            
+            if (attempt < maxRetries) {
+                console.log(`Waiting ${delayMs / 1000} seconds before retry...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            } else {
+                throw new Error('Max retries reached. Could not connect to Kafka.');
+            }
+        }
+    }
+}
+
 async function run() {
     try {
+        await connectDB();
+        
         await initializeTransporter();
         console.log('Email transporter initialized');
 
-        await consumer.connect();
-        console.log('Email consumer connected to Kafka');
+        console.log('Waiting 5 seconds for topics to be created...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
-        await consumer.subscribe({ topic: 'user-events', fromBeginning: false });
-        await consumer.subscribe({ topic: 'offer-events', fromBeginning: false });
+        await connectWithRetry();
 
         await consumer.run({
+            autoCommit: true,
             eachMessage: async ({ topic, partition, message }) => {
                 try {
 
