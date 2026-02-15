@@ -1,4 +1,5 @@
 const { consumer } = require('./consumer');
+const { createTransporter } = require('../config/email');
 const User = require('../models/User');
 const sendEmail = require('email');
 

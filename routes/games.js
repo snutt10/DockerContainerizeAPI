@@ -51,7 +51,7 @@ app.get('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Game'
  */
-app.post('/games', async (req, res) => {
+app.post('/', async (req, res) => {
     try {
         const { name, publisher, yearPublished, gamingSystem, condition, numberOfPreviousOwners, ownerId } = req.body;
 
@@ -105,7 +105,7 @@ app.post('/games', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.get('/games/:id', async (req, res) => {
+app.get('/:id', async (req, res) => {
     try {
         const game = await Game.findById(req.params.id).populate('ownerId', 'username email');
         if (!game) return res.status(404).json({ error: 'Game not found' });
@@ -138,7 +138,7 @@ app.get('/games/:id', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.put('/games/:id', async (req, res) => {
+app.put('/:id', async (req, res) => {
     try {
         const { name, publisher, yearPublished, gamingSystem, condition, numberOfPreviousOwners, ownerId } = req.body;
 
@@ -190,7 +190,7 @@ app.put('/games/:id', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.patch('/games/:id', async (req, res) => {
+app.patch('/:id', async (req, res) => {
     try {
         const { name, publisher, yearPublished, gamingSystem, condition, numberOfPreviousOwners, ownerId } = req.body;
 
@@ -236,7 +236,7 @@ app.patch('/games/:id', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.delete('/games/:id', async (req, res) => {
+app.delete('/:id', async (req, res) => {
     try {
         const deletedGame = await Game.findByIdAndDelete(req.params.id);
         if (!deletedGame) return res.status(404).json({ error: 'Game not found' });
@@ -245,3 +245,5 @@ app.delete('/games/:id', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+module.exports = app;

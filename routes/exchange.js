@@ -58,7 +58,7 @@ app.get('/', async (req, res) => {
  *       400:
  *         description: Invalid exchange request
  */
-app.post('/exchanges', async (req, res) => {
+app.post('/', async (req, res) => {
     try {
         const { initiatingUserId, targetUserId, gameOfferedId, gameRequestedId } = req.body;
 
@@ -146,7 +146,7 @@ app.post('/exchanges', async (req, res) => {
  *       404:
  *         description: Exchange not found
  */
-app.get('/exchanges/:id', async (req, res) => {
+app.get('/:id', async (req, res) => {
     try {
         const exchange = await Exchange.findById(req.params.id)
             .populate('initiatingUserId', 'username email')
@@ -183,7 +183,7 @@ app.get('/exchanges/:id', async (req, res) => {
  *       400:
  *         description: Exchange cannot be accepted
  */
-app.post('/exchanges/:id/accept', async (req, res) => {
+app.post('/:id/accept', async (req, res) => {
     try {
         const exchange = await Exchange.findById(req.params.id);
         if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
@@ -253,7 +253,7 @@ app.post('/exchanges/:id/accept', async (req, res) => {
  *       400:
  *         description: Exchange cannot be rejected
  */
-app.post('/exchanges/:id/reject', async (req, res) => {
+app.post('/:id/reject', async (req, res) => {
     try {
         const exchange = await Exchange.findById(req.params.id);
         if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
@@ -317,7 +317,7 @@ app.post('/exchanges/:id/reject', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.get('/exchanges/user/:userId', async (req, res) => {
+app.get('/user/:userId', async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -338,3 +338,5 @@ app.get('/exchanges/user/:userId', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+module.exports = app;

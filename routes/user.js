@@ -57,7 +57,7 @@ app.get('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
-app.post('/users', async (req, res) => {
+app.post('/', async (req, res) => {
     try {
         const { username, email, password, address } = req.body;
 
@@ -107,7 +107,7 @@ app.post('/users', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.get('/users/:id', async (req, res) => {
+app.get('/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -141,7 +141,7 @@ app.get('/users/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.put('/users/:id', async (req, res) => {
+app.put('/:id', async (req, res) => {
     try {
         const { username, email, address, password } = req.body;
 
@@ -207,7 +207,7 @@ app.put('/users/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.patch('/users/:id', async (req, res) => {
+app.patch('/:id', async (req, res) => {
     try {
         // Do not allow changing email via PATCH
         if (Object.prototype.hasOwnProperty.call(req.body, 'email')) {
@@ -258,7 +258,7 @@ app.patch('/users/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.delete('/users/:id', async (req, res) => {
+app.delete('/:id', async (req, res) => {
     try {
         const deletedUser = await User.findByIdAndDelete(req.params.id);
         if (!deletedUser) return res.status(404).json({ error: 'User not found' });
@@ -303,7 +303,7 @@ app.delete('/users/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.get('/users/:id/games', async (req, res) => {
+app.get('/:id/games', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -314,3 +314,5 @@ app.get('/users/:id/games', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+module.exports = app;

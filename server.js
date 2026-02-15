@@ -20,23 +20,10 @@ app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // ============================================
 // Front Endpoint
 // ============================================
-/**
- * @swagger
- * /:
- *   get:
- *     summary: Welcome message
- *     responses:
- *       200:
- *         description: Welcome message
- */
-app.get('/', (req, res) => {
-    res.send('Game Exchange API - Welcome! (MongoDB Edition)');
-    console.log(`Request served by: ${replicaApp}`);
-});
 
-// app.use('/games', require('./routes/games'));
-// app.use('/users', require('./routes/users'));
-// app.use('/exchanges', require('./routes/exchanges'));
+app.use('/games', require('./routes/games'));
+app.use('/users', require('./routes/user'));
+app.use('/exchanges', require('./routes/exchange'));
 
 // ============================================
 // ERROR HANDLING MIDDLEWARE
