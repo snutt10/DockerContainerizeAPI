@@ -3,8 +3,8 @@ const bcrypt = require('bcrypt');
 const { producer } = require('../config/producer');
 const User = require('../models/User');
 const Game = require('../models/Game');
-const app = express();
-app.use(express.json());
+const router = express.Router();
+
 // ============================================
 // USERS ENDPOINTS
 // ============================================
@@ -24,7 +24,7 @@ app.use(express.json());
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
-app.get('/', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const users = await User.find();
         // Calculate game count for each user
@@ -57,7 +57,7 @@ app.get('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
-app.post('/', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { username, email, password, address } = req.body;
 
@@ -107,7 +107,7 @@ app.post('/', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -141,7 +141,7 @@ app.get('/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.put('/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
         const { username, email, address, password } = req.body;
 
@@ -207,7 +207,7 @@ app.put('/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
         // Do not allow changing email via PATCH
         if (Object.prototype.hasOwnProperty.call(req.body, 'email')) {
@@ -258,7 +258,7 @@ app.patch('/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const deletedUser = await User.findByIdAndDelete(req.params.id);
         if (!deletedUser) return res.status(404).json({ error: 'User not found' });
@@ -303,7 +303,7 @@ app.delete('/:id', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.get('/:id/games', async (req, res) => {
+router.get('/:id/games', async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -315,4 +315,4 @@ app.get('/:id/games', async (req, res) => {
     }
 });
 
-module.exports = app;
+module.exports = router;

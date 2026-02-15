@@ -1,8 +1,9 @@
 const { Kafka } = require('kafkajs');
+const brokers = process.env.KAFKA_BROKER || 'localhost:9092';
 
 const kafka = new Kafka({
     clientId: 'email-service',
-    brokers: [process.env.KAFKA_BROKER || 'kafka:9092'],
+    brokers: [brokers],
 });
 
 const consumer = kafka.consumer({ groupId: 'email-group' });

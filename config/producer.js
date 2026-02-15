@@ -1,5 +1,5 @@
 const { Kafka, Partitioners } = require('kafkajs')
-const brokers = process.env.KAFKA_BROKERS || 'localhost:9092';
+const brokers = process.env.KAFKA_BROKER || 'localhost:9092';
 
 const kafka = new Kafka({
     clientId: 'video-game-exchange-api',

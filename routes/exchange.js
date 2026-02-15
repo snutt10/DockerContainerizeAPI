@@ -1,9 +1,9 @@
 const express = require('express');
 const Exchange = require('../models/Exchange');
-const { producer } = require('../config/kafka');
+const { producer } = require('../config/producer');
 const User = require('../models/User');
-const Game = require('../models/Game');const app = express();
-app.use(express.json());
+const Game = require('../models/Game');
+const router = express.Router();
 
 // ============================================
 // EXCHANGES ENDPOINTS
@@ -24,7 +24,7 @@ app.use(express.json());
  *               items:
  *                 $ref: '#/components/schemas/Exchange'
  */
-app.get('/', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const exchanges = await Exchange.find()
             .populate('initiatingUserId', 'username email')
@@ -58,7 +58,7 @@ app.get('/', async (req, res) => {
  *       400:
  *         description: Invalid exchange request
  */
-app.post('/', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { initiatingUserId, targetUserId, gameOfferedId, gameRequestedId } = req.body;
 
@@ -146,7 +146,7 @@ app.post('/', async (req, res) => {
  *       404:
  *         description: Exchange not found
  */
-app.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const exchange = await Exchange.findById(req.params.id)
             .populate('initiatingUserId', 'username email')
@@ -183,7 +183,7 @@ app.get('/:id', async (req, res) => {
  *       400:
  *         description: Exchange cannot be accepted
  */
-app.post('/:id/accept', async (req, res) => {
+router.post('/:id/accept', async (req, res) => {
     try {
         const exchange = await Exchange.findById(req.params.id);
         if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
@@ -253,7 +253,7 @@ app.post('/:id/accept', async (req, res) => {
  *       400:
  *         description: Exchange cannot be rejected
  */
-app.post('/:id/reject', async (req, res) => {
+router.post('/:id/reject', async (req, res) => {
     try {
         const exchange = await Exchange.findById(req.params.id);
         if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
@@ -317,7 +317,7 @@ app.post('/:id/reject', async (req, res) => {
  *       404:
  *         description: User not found
  */
-app.get('/user/:userId', async (req, res) => {
+router.get('/user/:userId', async (req, res) => {
     try {
         const user = await User.findById(req.params.userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -339,4 +339,4 @@ app.get('/user/:userId', async (req, res) => {
     }
 });
 
-module.exports = app;
+module.exports = router;

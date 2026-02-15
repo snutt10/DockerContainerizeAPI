@@ -1,8 +1,7 @@
 const express = require('express');
 const Game = require('../models/Game');
 const User = require('../models/User');
-const app = express();
-app.use(express.json());
+const router = express.Router();
 
 // ============================================
 // GAMES ENDPOINTS
@@ -23,7 +22,7 @@ app.use(express.json());
  *               items:
  *                 $ref: '#/components/schemas/Game'
  */
-app.get('/', async (req, res) => {
+router.get('/', async (req, res) => {
     try {
         const games = await Game.find().populate('ownerId', 'username email');
         res.json(games);
@@ -51,7 +50,7 @@ app.get('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Game'
  */
-app.post('/', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { name, publisher, yearPublished, gamingSystem, condition, numberOfPreviousOwners, ownerId } = req.body;
 
@@ -105,7 +104,7 @@ app.post('/', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
     try {
         const game = await Game.findById(req.params.id).populate('ownerId', 'username email');
         if (!game) return res.status(404).json({ error: 'Game not found' });
@@ -138,7 +137,7 @@ app.get('/:id', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.put('/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
         const { name, publisher, yearPublished, gamingSystem, condition, numberOfPreviousOwners, ownerId } = req.body;
 
@@ -190,7 +189,7 @@ app.put('/:id', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req, res) => {
     try {
         const { name, publisher, yearPublished, gamingSystem, condition, numberOfPreviousOwners, ownerId } = req.body;
 
@@ -236,7 +235,7 @@ app.patch('/:id', async (req, res) => {
  *       404:
  *         description: Game not found
  */
-app.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
     try {
         const deletedGame = await Game.findByIdAndDelete(req.params.id);
         if (!deletedGame) return res.status(404).json({ error: 'Game not found' });
@@ -246,4 +245,4 @@ app.delete('/:id', async (req, res) => {
     }
 });
 
-module.exports = app;
+module.exports = router;

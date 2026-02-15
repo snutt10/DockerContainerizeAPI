@@ -3,15 +3,31 @@ const swaggerUi = require('swagger-ui-express');
 const {setupSwagger} = require('./config/swagger');
 const {swaggerOptions} = require('./config/swagger');
 const swaggerJsdoc = require('swagger-jsdoc');
-//const { consumer } = require('./config/kafka');
 const { connectDB } = require('./config/db');
+const { connectKafka } = require('./config/producer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-//consumer();
-connectDB();
+
+const startServer = async () => {
+    try {
+        await connectDB();
+        await connectKafka();  // ✓ Connect to Kafka
+        
+        console.log('Database and Kafka connected successfully');
+        
+        // Start server after connections are ready
+        app.listen(PORT, () => {
+            console.log(`Game Exchange API is listening on port ${PORT}`);
+            console.log(`Swagger UI available at http://localhost:${PORT}/swagger`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
 
 setupSwagger(app);
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -37,6 +53,7 @@ app.use((err, req, res, next) => {
 // ============================================
 // START SERVER
 // ============================================
+startServer();
 
 app.listen(PORT, () => {
     console.log(`Game Exchange API is listening on port ${PORT}`);
