@@ -8,7 +8,23 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    networks:
+      - monitoring
     restart: unless-stopped
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3004:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
   # Kafka broker
   kafka:
     image: apache/kafka:3.7.0
@@ -71,6 +87,8 @@ services:
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
       - KAFKA_BROKER=kafka:9092
     container_name: game-api1
+    networks:
+      - monitoring
     depends_on:
       mongodb:
         condition: service_healthy
@@ -92,6 +110,8 @@ services:
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
       - KAFKA_BROKER=kafka:9092
     container_name: game-api2
+    networks:
+      - monitoring
     depends_on:
       mongodb:
         condition: service_healthy
@@ -106,6 +126,8 @@ services:
       dockerfile: Dockerfile.nginx
     ports:
       - "8080:8080"
+    networks:
+      - monitoring
     depends_on:
       - game-api1
       - game-api2
@@ -119,6 +141,8 @@ services:
     ports:
       - "4000:4000"
     container_name: email-service
+    networks:
+      - monitoring
     environment:
       - NODE_ENV=production
       - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
@@ -135,3 +159,8 @@ services:
 volumes:
   prometheus_data:
   mongodb_data:
+  grafana_data:
+
+networks:
+  monitoring:
+    driver: bridge

@@ -6,12 +6,13 @@ const {swaggerOptions} = require('./config/swagger');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { connectDB } = require('./config/db');
 const { connectKafka } = require('./config/producer');
+const { timeout } = require('email');
 const app = express();
 const register = new client.Registry();
 const PORT = process.env.PORT || 3000;
 
-client.collectDefaultMetrics({ register });
-
+const collectDefaultMetrics = client.collectDefaultMetrics({ register });
+collectDefaultMetrics({timeout: 5000});
 const httpDuration = new client.Histogram({
     name: 'http_request_duration_seconds',
     help: 'Duration of HTTP requests in seconds',
@@ -21,6 +22,15 @@ const httpDuration = new client.Histogram({
 });
 // Middleware
 app.use(express.json());
+
+// Prometheus metrics middleware
+app.use((req, res, next) => {
+    const end = httpDuration.startTimer();
+    res.on('finish', () => {
+        end({ method: req.method, route: req.route ? req.route.path : req.path, status_code: res.statusCode });
+    });
+    next();
+});
 
 const startServer = async () => {
     try {
@@ -59,11 +69,6 @@ app.use('/exchanges', require('./routes/exchange'));
 // ============================================
 
 app.use((err, req, res, next) => {
-    const end = httpDuration.startTimer();
-    res.on('finish', () => {
-        end({ method: req.method, route: req.route ? req.route.path : req.path, status_code: res.statusCode });
-    });
-    next();
     console.error(err.stack);
     res.status(500).json({ error: 'Internal server error' });
 });

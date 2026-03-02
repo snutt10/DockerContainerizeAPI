@@ -1,6 +1,15 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 30s
 scrape_configs:
   - job_name: prometheus
     static_configs:
-      - targets: ['dockercontainer:3000'] #Change this to your server's IP
+      - targets: ['prometheus:9090']
+  - job_name: api1
+    static_configs:
+      - targets: ['game-api1:3000']
+  - job_name: api2
+    static_configs:
+      - targets: ['game-api2:3000']
+  - job_name: nginx
+    static_configs:
+      - targets: ['nginx:80']
