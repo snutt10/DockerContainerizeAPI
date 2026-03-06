@@ -31,6 +31,8 @@ services:
     container_name: kafka
     ports:
       - "9092:9092"
+    networks:
+      - monitoring
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -59,6 +61,8 @@ services:
     container_name: game-api-mongo
     ports:
       - "27017:27017"
+    networks:
+      - monitoring
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin123
@@ -131,6 +135,34 @@ services:
     depends_on:
       - game-api1
       - game-api2
+    restart: unless-stopped
+
+  # exporter for nginx metrics
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:latest
+    container_name: nginx-exporter
+    ports:
+      - "9113:9113"
+    networks:
+      - monitoring
+    depends_on:
+      - nginx
+    command: ["-nginx.scrape-uri", "http://nginx:8080/stub_status"]
+    restart: unless-stopped
+
+  # MongoDB exporter for Prometheus metrics
+  mongodb-exporter:
+    image: bitnami/mongodb-exporter:latest
+    container_name: mongodb-exporter
+    ports:
+      - "9216:9216"
+    networks:
+      - monitoring
+    environment:
+      - MONGODB_NAMESPACE=admin
+      - MONGODB_URI=mongodb://admin:admin123@mongodb:27017/CSC380?authSource=admin
+    depends_on:
+      - mongodb
     restart: unless-stopped
 
   # Email service (Kafka consumer)

@@ -11,8 +11,8 @@ const app = express();
 const register = new client.Registry();
 const PORT = process.env.PORT || 3000;
 
-const collectDefaultMetrics = client.collectDefaultMetrics({ register });
-collectDefaultMetrics({timeout: 5000});
+// register default Node.js metrics with Prometheus
+client.collectDefaultMetrics({ register, timeout: 5000 });
 const httpDuration = new client.Histogram({
     name: 'http_request_duration_seconds',
     help: 'Duration of HTTP requests in seconds',
@@ -65,13 +65,8 @@ app.use('/users', require('./routes/user'));
 app.use('/exchanges', require('./routes/exchange'));
 
 // ============================================
-// ERROR HANDLING MIDDLEWARE
+// METRICS ENDPOINT
 // ============================================
-
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Internal server error' });
-});
 
 app.get('/metrics', async (req, res) => {
     try {
@@ -80,6 +75,15 @@ app.get('/metrics', async (req, res) => {
     } catch (error) {
         res.status(500).end(error);
     }
+});
+
+// ============================================
+// ERROR HANDLING MIDDLEWARE
+// ============================================
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Internal server error' });
 });
 // ============================================
 // START SERVER

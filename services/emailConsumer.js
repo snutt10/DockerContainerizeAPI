@@ -1,7 +1,31 @@
+const express = require('express');
+const client = require('prom-client');
 const { consumer } = require('./consumer');
 const createTransporter = require('../config/email');
 const { connectDB } = require('../config/db');
 const User = require('../models/User');
+
+const app = express();
+const register = new client.Registry();
+const PORT = process.env.PORT || 4000;
+
+// Register default Node.js metrics
+client.collectDefaultMetrics({ register, timeout: 5000 });
+
+// Metrics for email processing
+const emailsProcessed = new client.Counter({
+    name: 'emails_processed_total',
+    help: 'Total number of emails processed',
+    labelNames: ['status', 'event_type'],
+    registers: [register],
+});
+
+const messagesProcessed = new client.Counter({
+    name: 'kafka_messages_processed_total',
+    help: 'Total number of Kafka messages processed',
+    labelNames: ['topic', 'status'],
+    registers: [register],
+});
 
 let transporter;
 
@@ -12,6 +36,7 @@ async function initializeTransporter() {
 async function sendEmail(email, subject, body) {
     if (!transporter) {
         console.error('Email transporter not initialized');
+        emailsProcessed.inc({ status: 'error', event_type: 'unknown' });
         return;
     }
 
@@ -26,10 +51,12 @@ async function sendEmail(email, subject, body) {
         
         console.log('Message sent: %s', info.messageId);
         console.log('Preview URL: %s', require('nodemailer').getTestMessageUrl(info));
+        emailsProcessed.inc({ status: 'success', event_type: 'email' });
         
         return info;
     } catch (error) {
         console.error('Error sending email:', error);
+        emailsProcessed.inc({ status: 'error', event_type: 'email' });
     }
 }
 
@@ -61,6 +88,24 @@ async function connectWithRetry(maxRetries = 10, delayMs = 5000) {
 
 async function run() {
     try {
+        // Start Express server for metrics
+        app.get('/metrics', async (req, res) => {
+            try {
+                res.set('Content-Type', register.contentType);
+                res.end(await register.metrics());
+            } catch (error) {
+                res.status(500).end(error);
+            }
+        });
+
+        app.get('/health', (req, res) => {
+            res.status(200).json({ status: 'ok' });
+        });
+
+        app.listen(PORT, () => {
+            console.log(`Email service metrics available at http://localhost:${PORT}/metrics`);
+        });
+
         await connectDB();
         
         await initializeTransporter();
@@ -75,6 +120,7 @@ async function run() {
             autoCommit: true,
             eachMessage: async ({ topic, partition, message }) => {
                 try {
+                    messagesProcessed.inc({ topic, status: 'processing' });
 
                     const event = JSON.parse(message.value.toString());
 
@@ -85,6 +131,7 @@ async function run() {
                                 if (user) {
                                     await sendEmail(user.email, 'Password Changed',
                                         `Hello ${user.username}, your password was changed successfully. If you did not initiate this change, please contact support immediately.`);
+                                    messagesProcessed.inc({ topic, status: 'success' });
                                 }
                             }
                             break;
@@ -100,6 +147,7 @@ async function run() {
                                 if (targetUser) {
                                     await sendEmail(targetUser.email, 'You received a new offer', `Hello ${targetUser.username}, you received a new offer.`);
                                 }
+                                messagesProcessed.inc({ topic, status: 'success' });
                             } else if (event.eventType === 'OFFER_ACCEPTED') {
                                 if (initiatingUser) {
                                     await sendEmail(initiatingUser.email, 'Your offer was accepted', `Hello ${initiatingUser.username}, your offer was accepted.`);
@@ -107,6 +155,7 @@ async function run() {
                                 if (targetUser) {
                                     await sendEmail(targetUser.email, 'You accepted an offer', `Hello ${targetUser.username}, you accepted an offer.`);
                                 }
+                                messagesProcessed.inc({ topic, status: 'success' });
                             } else if (event.eventType === 'OFFER_REJECTED') {
                                 if (initiatingUser) {
                                     await sendEmail(initiatingUser.email, 'Your offer was rejected', `Hello ${initiatingUser.username}, your offer was rejected.`);
@@ -114,11 +163,13 @@ async function run() {
                                 if (targetUser) {
                                     await sendEmail(targetUser.email, 'You rejected an offer', `Hello ${targetUser.username}, you rejected an offer.`);
                                 }
+                                messagesProcessed.inc({ topic, status: 'success' });
                             }
                             break;
                     }
                 } catch (error) {
                     console.error('Error processing message:', error);
+                    messagesProcessed.inc({ topic: message.topic || 'unknown', status: 'error' });
                 }
             }
         });

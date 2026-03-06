@@ -12,4 +12,10 @@ scrape_configs:
       - targets: ['game-api2:3000']
   - job_name: nginx
     static_configs:
-      - targets: ['nginx:80']
+      - targets: ['nginx-exporter:9113']
+  - job_name: mongodb
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+  - job_name: email-service
+    static_configs:
+      - targets: ['email-service:4000']
