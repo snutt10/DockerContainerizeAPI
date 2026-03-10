@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const { producer } = require('../config/producer');
+const { getCachedData, setCacheData, deleteCacheKey, CACHE_KEYS, DEFAULT_TTL } = require('../config/cache');
 const User = require('../models/User');
 const Game = require('../models/Game');
 const router = express.Router();
@@ -26,12 +27,23 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
     try {
+        // Check cache first
+        const cachedUsers = await getCachedData(CACHE_KEYS.ALL_USERS);
+        if (cachedUsers) {
+            return res.json(cachedUsers);
+        }
+
+        // Cache miss - fetch from DB
         const users = await User.find();
         // Calculate game count for each user
         const usersWithCount = await Promise.all(users.map(async (user) => {
             const gameCount = await Game.countDocuments({ ownerId: user._id });
             return { ...user.toObject(), gameCount };
         }));
+        
+        // Store in cache for next request
+        await setCacheData(CACHE_KEYS.ALL_USERS, usersWithCount, DEFAULT_TTL.ALL_USERS);
+        
         res.json(usersWithCount);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -69,6 +81,10 @@ router.post('/', async (req, res) => {
         const existingUser = await User.findOne({ email: email.toLowerCase() });
         if (existingUser) {
             return res.status(400).json({ error: 'Email already in use' });
+        
+        // Invalidate ALL_USERS cache since list changed
+        await deleteCacheKey(CACHE_KEYS.ALL_USERS);
+        
         }
 
         const newUser = new User({
@@ -105,10 +121,22 @@ router.post('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/User'
  *       404:
- *         description: User not found
- */
-router.get('/:id', async (req, res) => {
-    try {
+ *      // Check cache first
+        const cachedUser = await getCachedData(CACHE_KEYS.USER(req.params.id));
+        if (cachedUser) {
+            return res.json(cachedUser);
+        }
+
+        // Cache miss - fetch from DB
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        const gameCount = await Game.countDocuments({ ownerId: user._id });
+        const userWithCount = { ...user.toObject(), gameCount };
+        
+        // Store in cache for next request
+        await setCacheData(CACHE_KEYS.USER(req.params.id), userWithCount, DEFAULT_TTL.SINGLE_USER);
+        
+        res.json(userWithCount
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ error: 'User not found' });
         const gameCount = await Game.countDocuments({ ownerId: user._id });
@@ -161,7 +189,12 @@ router.put('/:id', async (req, res) => {
 
         const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
         if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+// Invalidate caches - individual user, all users list, and user games
+        await deleteCacheKey(CACHE_KEYS.USER(req.params.id));
+        await deleteCacheKey(CACHE_KEYS.ALL_USERS);
+        await deleteCacheKey(CACHE_KEYS.USER_GAMES(req.params.id));
 
+        
         if (password !== undefined){
             await producer.send({
                 topic: 'user-events',
@@ -217,6 +250,12 @@ router.patch('/:id', async (req, res) => {
         const updateData = {};
         // Apply only fields explicitly provided in the request body
         if (Object.prototype.hasOwnProperty.call(req.body, 'username')) {
+        
+        // Invalidate caches - individual user, all users list, and user games
+        await deleteCacheKey(CACHE_KEYS.USER(req.params.id));
+        await deleteCacheKey(CACHE_KEYS.ALL_USERS);
+        await deleteCacheKey(CACHE_KEYS.USER_GAMES(req.params.id));
+        
             updateData.username = req.body.username === '' ? null : req.body.username;
         }
         if (Object.prototype.hasOwnProperty.call(req.body, 'address')) {

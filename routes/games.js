@@ -1,6 +1,7 @@
 const express = require('express');
 const Game = require('../models/Game');
 const User = require('../models/User');
+const { getCachedData, setCacheData, deleteCacheKey, CACHE_KEYS, DEFAULT_TTL } = require('../config/cache');
 const router = express.Router();
 
 // ============================================
@@ -24,7 +25,18 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
     try {
+        // Check cache first
+        const cachedGames = await getCachedData(CACHE_KEYS.ALL_GAMES);
+        if (cachedGames) {
+            return res.json(cachedGames);
+        }
+
+        // Cache miss - fetch from DB
         const games = await Game.find().populate('ownerId', 'username email');
+        
+        // Store in cache for next request
+        await setCacheData(CACHE_KEYS.ALL_GAMES, games, DEFAULT_TTL.ALL_GAMES);
+        
         res.json(games);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -66,6 +78,10 @@ router.post('/', async (req, res) => {
             }
         }
 
+        
+        // Invalidate ALL_GAMES cache since list changed
+        await deleteCacheKey(CACHE_KEYS.ALL_GAMES);
+        
         const newGame = new Game({
             name,
             publisher,
@@ -102,10 +118,18 @@ router.post('/', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Game'
  *       404:
- *         description: Game not found
- */
+ */   
+ // Check cache first
+        
 router.get('/:id', async (req, res) => {
     try {
+        const cachedGame = await getCachedData(CACHE_KEYS.GAME(req.params.id));
+        if (cachedGame) {
+            return res.json(cachedGame);
+        }
+        // Store in cache for next request
+        await setCacheData(CACHE_KEYS.GAME(req.params.id), game, DEFAULT_TTL.SINGLE_GAME);
+        
         const game = await Game.findById(req.params.id).populate('ownerId', 'username email');
         if (!game) return res.status(404).json({ error: 'Game not found' });
         res.json(game);
@@ -145,6 +169,11 @@ router.put('/:id', async (req, res) => {
             const owner = await User.findById(ownerId);
             if (!owner) {
                 return res.status(400).json({ error: 'Owner user not found' });
+        
+        // Invalidate caches - individual game and all games list
+        await deleteCacheKey(CACHE_KEYS.GAME(req.params.id));
+        await deleteCacheKey(CACHE_KEYS.ALL_GAMES);
+        
             }
         }
 
@@ -196,6 +225,11 @@ router.patch('/:id', async (req, res) => {
         if (ownerId) {
             const owner = await User.findById(ownerId);
             if (!owner) {
+        
+        // Invalidate caches - individual game and all games list
+        await deleteCacheKey(CACHE_KEYS.GAME(req.params.id));
+        await deleteCacheKey(CACHE_KEYS.ALL_GAMES);
+        
                 return res.status(400).json({ error: 'Owner user not found' });
             }
         }
@@ -219,6 +253,11 @@ router.patch('/:id', async (req, res) => {
 });
 
 /**
+        // Invalidate caches - individual game and all games list
+        await deleteCacheKey(CACHE_KEYS.GAME(req.params.id));
+        await deleteCacheKey(CACHE_KEYS.ALL_GAMES);
+        
+        
  * @swagger
  * /games/{id}:
  *   delete:

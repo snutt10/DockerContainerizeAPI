@@ -1,6 +1,7 @@
 const express = require('express');
 const Exchange = require('../models/Exchange');
 const { producer } = require('../config/producer');
+const { getCachedData, setCacheData, deleteCacheKey, CACHE_KEYS, DEFAULT_TTL } = require('../config/cache');
 const User = require('../models/User');
 const Game = require('../models/Game');
 const router = express.Router();
@@ -26,11 +27,22 @@ const router = express.Router();
  */
 router.get('/', async (req, res) => {
     try {
+        // Check cache first
+        const cachedExchanges = await getCachedData(CACHE_KEYS.ALL_EXCHANGES);
+        if (cachedExchanges) {
+            return res.json(cachedExchanges);
+        }
+
+        // Cache miss - fetch from DB
         const exchanges = await Exchange.find()
             .populate('initiatingUserId', 'username email')
             .populate('targetUserId', 'username email')
             .populate('gameOfferedId', 'name gamingSystem')
             .populate('gameRequestedId', 'name gamingSystem');
+        
+        // Store in cache for next request
+        await setCacheData(CACHE_KEYS.ALL_EXCHANGES, exchanges, DEFAULT_TTL.ALL_EXCHANGES);
+        
         res.json(exchanges);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -97,6 +109,9 @@ router.post('/', async (req, res) => {
             status: 'pending'
         });
 
+        await deleteCacheKey(CACHE_KEYS.ALL_EXCHANGES);
+
+
         const savedExchange = await newExchange.save();
         const populatedExchange = await savedExchange.populate([
             { path: 'initiatingUserId', select: 'username email' },
@@ -145,15 +160,25 @@ router.post('/', async (req, res) => {
  *               $ref: '#/components/schemas/Exchange'
  *       404:
  *         description: Exchange not found
- */
+    */
 router.get('/:id', async (req, res) => {
     try {
+        const cachedExchange = await getCachedData(CACHE_KEYS.EXCHANGE(req.params.id));
+        if (cachedExchange) {
+            return res.json(cachedExchange);
+        }
+
+        // Cache miss - fetch from DB
         const exchange = await Exchange.findById(req.params.id)
             .populate('initiatingUserId', 'username email')
             .populate('targetUserId', 'username email')
             .populate('gameOfferedId', 'name gamingSystem')
             .populate('gameRequestedId', 'name gamingSystem');
         if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
+        
+        // Store in cache for next request
+        await setCacheData(CACHE_KEYS.EXCHANGE(req.params.id), exchange, DEFAULT_TTL.SINGLE_EXCHANGE);
+        
         res.json(exchange);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -195,7 +220,14 @@ router.post('/:id/accept', async (req, res) => {
         // Swap game ownership
         await Game.findByIdAndUpdate(exchange.gameOfferedId, { ownerId: exchange.targetUserId });
         await Game.findByIdAndUpdate(exchange.gameRequestedId, { ownerId: exchange.initiatingUserId });
+// Invalidate caches - individual exchange, all exchanges list, and related games/users
+        await deleteCacheKey(CACHE_KEYS.EXCHANGE(req.params.id));
+        await deleteCacheKey(CACHE_KEYS.ALL_EXCHANGES);
+        await deleteCacheKey(CACHE_KEYS.GAME(exchange.gameOfferedId));
+        await deleteCacheKey(CACHE_KEYS.GAME(exchange.gameRequestedId));
+        await deleteCacheKey(CACHE_KEYS.ALL_GAMES);
 
+        
         // Update exchange
         exchange.status = 'completed';
         exchange.completedAt = new Date();
@@ -255,6 +287,10 @@ router.post('/:id/accept', async (req, res) => {
  */
 router.post('/:id/reject', async (req, res) => {
     try {
+        // Invalidate caches - individual exchange and all exchanges list
+        await deleteCacheKey(CACHE_KEYS.EXCHANGE(req.params.id));
+        await deleteCacheKey(CACHE_KEYS.ALL_EXCHANGES);
+
         const exchange = await Exchange.findById(req.params.id);
         if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
 

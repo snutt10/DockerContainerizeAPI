@@ -6,6 +6,7 @@ const {swaggerOptions} = require('./config/swagger');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { connectDB } = require('./config/db');
 const { connectKafka } = require('./config/producer');
+const { connectRedis } = require('./config/redis');
 const { timeout } = require('email');
 const app = express();
 const register = new client.Registry();
@@ -35,9 +36,10 @@ app.use((req, res, next) => {
 const startServer = async () => {
     try {
         await connectDB();
-        await connectKafka();  // ✓ Connect to Kafka
+        await connectRedis();
+        await connectKafka();
         
-        console.log('Database and Kafka connected successfully');
+        console.log('Database, Redis, and Kafka connected successfully');
         
         // Start server after connections are ready
         app.listen(PORT, () => {
